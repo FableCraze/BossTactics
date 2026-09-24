@@ -42,7 +42,7 @@ local HEADER_MIN_CONTROLS_W  = 40
 -- moves, while the footer shifts with the amount of text on screen.
 local HEADER_NAV_W = 38
 local MIN_W, MAX_W, DEFAULT_W = 240, 440, 270
-local DETAIL_MIN_W, DETAIL_MAX_W, DETAIL_DEFAULT_W = 360, 620, 420
+local DETAIL_MIN_W, DETAIL_MAX_W, DETAIL_DEFAULT_W = 360, 620, 480
 
 local function PanelWidth()
     local db = BT.db or {}
@@ -596,7 +596,8 @@ function MP:ApplyHoverLayout()
     -- visible. Compact mode keeps the tracker-like mouseover footer.
     local show = not minimized and (db.detailsExpanded or f._hovered) and true or false
     if f.footer then f.footer:SetShown(show) end
-    local extra = show and (FOOTER_H + 2) or 0
+    local footerHeight = f._footerHeight or FOOTER_H
+    local extra = show and (footerHeight + 2) or 0
     f:SetHeight((f._baseHeight or 80) + extra)
 end
 
@@ -638,6 +639,89 @@ function MP:ApplyLook()
     end
 end
 
+function MP:LayoutHeaderButtons()
+    local f = self.frame
+    if not f then return end
+    local minimized = BT.db and BT.db.panelMinimized
+    local gap = 2
+
+    local function Fit(button, iconWidth)
+        if Theme then
+            return Theme:FitButton(button, {
+                compact = true,
+                minWidth = 22,
+                iconWidth = iconWidth or 0,
+            })
+        end
+        return button:GetWidth() or 22
+    end
+
+    local closeW = Fit(f.closeBtn)
+    local minimizeW = Fit(f.minimizeBtn)
+    local detailsW = minimized and 0 or Fit(f.detailsBtn)
+    local roleIconW = f.roleBtn.icon:IsShown() and 14 or 0
+    local roleW = minimized and 0 or Fit(f.roleBtn, roleIconW)
+
+    f.closeBtn:ClearAllPoints()
+    f.closeBtn:SetPoint("TOPRIGHT", f.header, "TOPRIGHT", -2, -1)
+    f.minimizeBtn:ClearAllPoints()
+    f.minimizeBtn:SetPoint("RIGHT", f.closeBtn, "LEFT", -gap, 0)
+    if not minimized then
+        f.detailsBtn:ClearAllPoints()
+        f.detailsBtn:SetPoint("RIGHT", f.minimizeBtn, "LEFT", -gap, 0)
+        f.roleBtn:ClearAllPoints()
+        f.roleBtn:SetPoint("RIGHT", f.detailsBtn, "LEFT", -gap, 0)
+    end
+
+    local controlsWidth = closeW + minimizeW + gap
+    if not minimized then controlsWidth = controlsWidth + detailsW + roleW + gap * 2 end
+    f._headerControlsWidth = controlsWidth
+    f.title:SetWidth(math.max(80, TextWidth() - controlsWidth - 6))
+
+    local prevW = Fit(f.prevBtn)
+    local nextW = Fit(f.nextBtn)
+    f.subtitle:SetWidth(math.max(80, TextWidth() - prevW - nextW - gap - 2))
+    f.prevBtn:ClearAllPoints()
+    f.prevBtn:SetPoint("LEFT", f.subtitle, "RIGHT", 2, 0)
+    f.nextBtn:ClearAllPoints()
+    f.nextBtn:SetPoint("LEFT", f.prevBtn, "RIGHT", gap, 0)
+end
+
+function MP:LayoutFooterButtons()
+    local f = self.frame
+    if not f or not f.footer then return end
+    if not Theme then
+        f._footerHeight = FOOTER_H
+        f.footer:SetHeight(FOOTER_H)
+        return
+    end
+
+    local available = math.max(120, TextWidth())
+    local quickHeight = Theme:LayoutButtonBar(f.quickControls,
+        { f.quickTrashBtn, f.quickTipsBtn }, available, {
+            gap = 4,
+            rowGap = 4,
+            buttonOptions = { compact = true },
+        })
+
+    f.quickControls:ClearAllPoints()
+    f.quickControls:SetPoint("TOPLEFT", f.footer, "TOPLEFT", PAD, -2)
+    f.quickControls:SetPoint("TOPRIGHT", f.footer, "TOPRIGHT", -PAD, -2)
+
+    f.controls:ClearAllPoints()
+    f.controls:SetPoint("TOPLEFT", f.quickControls, "BOTTOMLEFT", 0, -4)
+    f.controls:SetPoint("TOPRIGHT", f.quickControls, "BOTTOMRIGHT", 0, -4)
+    local actionHeight = Theme:LayoutButtonBar(f.controls,
+        { f.optionsBtn, f.shareBtn, f.briefBtn, f.journalBtn }, available, {
+            gap = 4,
+            rowGap = 4,
+            buttonOptions = { compact = true },
+        })
+
+    f._footerHeight = math.max(FOOTER_H, quickHeight + actionHeight + 10)
+    f.footer:SetHeight(f._footerHeight)
+end
+
 --- Apply normal or combat opacity without changing the saved panel opacity.
 function MP:ApplyAlpha()
     local f = self.frame
@@ -656,29 +740,8 @@ function MP:ApplyWidth()
     local f = self.frame
     if not f then return end
     f:SetWidth(PanelWidth())
-    local minimized = BT.db and BT.db.panelMinimized
-    f.title:SetWidth(TextWidth()
-        - (minimized and HEADER_MIN_CONTROLS_W or HEADER_FULL_CONTROLS_W))
-    f.subtitle:SetWidth(TextWidth() - HEADER_NAV_W)
     f.content:SetWidth(PanelWidth())
-    if f.quickTrashBtn and f.quickTipsBtn then
-        local quickW = math.floor((TextWidth() - 3) / 2)
-        f.quickTrashBtn:SetWidth(quickW)
-        f.quickTipsBtn:SetWidth(TextWidth() - quickW - 3)
-    end
-    if f.tabBar and f.tabs then
-        local tabW = math.floor((TextWidth() - 4) / 3)
-        local ordered = { f.tabs.TLDR, f.tabs.ABILITIES, f.tabs.TIPS }
-        for i, tab in ipairs(ordered) do
-            tab:ClearAllPoints()
-            tab:SetWidth(i == 3 and (TextWidth() - (tabW * 2) - 4) or tabW)
-            if i == 1 then
-                tab:SetPoint("TOPLEFT", f.tabBar, "TOPLEFT", 0, -1)
-            else
-                tab:SetPoint("LEFT", ordered[i - 1], "RIGHT", 2, 0)
-            end
-        end
-    end
+    self:LayoutHeaderButtons()
     self:Refresh()
 end
 
@@ -1108,8 +1171,8 @@ function MP:UpdateShareButton()
         or "BTN_SHARE_TLDR"
     btn:SetText(BT:L(labelKey))
     local fs = btn:GetFontString()
-    local width = fs and (fs:GetStringWidth() + 16) or 52
-    btn:SetWidth(math.max(46, math.min(expanded and 132 or 72, width)))
+    local width = fs and (fs:GetStringWidth() + 24) or 52
+    btn:SetWidth(math.max(46, width))
 end
 
 local function ResolveTipText(tip)
@@ -1146,20 +1209,9 @@ function MP:UpdateDetailsTabs(counts)
     local f = self.frame
     if not f or not f.tabs then return end
     local current = CurrentDetailsTab()
-    local gaps = (#DETAIL_TABS - 1) * 2
-    local tabW = math.floor((TextWidth() - gaps) / #DETAIL_TABS)
-    local previous
-    for index, key in ipairs(DETAIL_TABS) do
+    local ordered = {}
+    for _, key in ipairs(DETAIL_TABS) do
         local btn = f.tabs[key]
-        btn:ClearAllPoints()
-        btn:SetWidth(index == #DETAIL_TABS
-            and (TextWidth() - tabW * (#DETAIL_TABS - 1) - gaps) or tabW)
-        if previous then
-            btn:SetPoint("LEFT", previous, "RIGHT", 2, 0)
-        else
-            btn:SetPoint("TOPLEFT", f.tabBar, "TOPLEFT", 0, -1)
-        end
-        previous = btn
         btn:SetText(BT:L(DETAIL_TAB_LABELS[key]) .. " " .. tostring(counts[key] or 0))
         local fs = btn:GetFontString()
         if key == current then
@@ -1170,6 +1222,16 @@ function MP:UpdateDetailsTabs(counts)
             if fs then fs:SetTextColor(1, 1, 1) end
         end
         if Theme then Theme:SetSelected(btn, key == current) end
+        ordered[#ordered + 1] = btn
+    end
+    if Theme then
+        f._tabBarHeight = Theme:LayoutButtonBar(f.tabBar, ordered, TextWidth(), {
+            gap = 2,
+            rowGap = 2,
+            buttonOptions = { compact = true },
+        })
+    else
+        f._tabBarHeight = TAB_BAR_H
     end
 end
 
@@ -1239,8 +1301,6 @@ function MP:Refresh()
     local expanded = db.detailsExpanded and true or false
     f:SetWidth(PanelWidth())
     f.content:SetWidth(PanelWidth())
-    f.title:SetWidth(TextWidth()
-        - (minimized and HEADER_MIN_CONTROLS_W or HEADER_FULL_CONTROLS_W))
     f.subtitle:SetShown(not minimized)
     f.detailsBtn:SetShown(not minimized)
     f.roleBtn:SetShown(not minimized)
@@ -1248,6 +1308,9 @@ function MP:Refresh()
     f.prevBtn:SetShown(not minimized)
     f.nextBtn:SetShown(not minimized)
     self:UpdateMinimizeButton()
+    self:UpdateRoleButton()
+    self:UpdateDetailsButton()
+    self:LayoutHeaderButtons()
 
     if minimized then
         self.linePool:ReleaseAll()
@@ -1298,6 +1361,9 @@ function MP:Refresh()
             TRASH = #trashSummary,
         })
     end
+    self:UpdateShareButton()
+    self:UpdateQuickButtons()
+    self:LayoutFooterButtons()
 
     f.scroll:ClearAllPoints()
     if expanded then
@@ -1479,8 +1545,10 @@ function MP:Refresh()
     local scale = db.scale or 1.0
     local maxTotal = (UIParent:GetHeight() or 768) * 0.7 / scale
     local chromeH = headerH + PAD + 8
+    local tabBarHeight = f._tabBarHeight or TAB_BAR_H
+    local footerHeight = f._footerHeight or FOOTER_H
     if expanded then
-        chromeH = chromeH + TAB_BAR_H + FOOTER_H
+        chromeH = chromeH + tabBarHeight + footerHeight
     end
     local maxScrollH = maxTotal - chromeH
     if scrollH > maxScrollH and maxScrollH > 40 then
@@ -1491,13 +1559,9 @@ function MP:Refresh()
     f.scroll:EnableMouseWheel(needScroll)
     f.scroll:SetVerticalScroll(0)
 
-    local bodyTop = expanded and (TAB_BAR_H + 4) or 2
+    local bodyTop = expanded and (tabBarHeight + 4) or 2
     f._baseHeight = headerH + bodyTop + scrollH + PAD
     self:ApplyHoverLayout()
-    self:UpdateRoleButton()
-    self:UpdateDetailsButton()
-    self:UpdateShareButton()
-    self:UpdateQuickButtons()
     self:ApplyLook()
 end
 

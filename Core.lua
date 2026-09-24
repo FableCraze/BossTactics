@@ -24,7 +24,7 @@ local defaults = {
     backdropMode    = true,       -- subtle readable backdrop for new installs
     backdropColor   = { r = 0, g = 0, b = 0, a = 1.0 },
     panelWidth      = 270,        -- 240–440, slider + resize grip
-    detailedPanelWidth = 420,     -- 360–620, separate width for the full view
+    detailedPanelWidth = 480,     -- 360–620, separate width for the full view
     fontSize        = 15,
     roleFilter      = "ALL",      -- explicit user filter: ALL/TANK/HEALER/DPS
     autoShowOnEnter = true,
@@ -37,7 +37,7 @@ local defaults = {
     shareSignature  = true,        -- append a short Boss Tactics credit to shares
     panelShown      = false,      -- /reload restore: was the panel visible
     panelMinimized  = false,      -- compact title bar; survives /reload
-    detailsExpanded = false,      -- Compact (default) vs tabbed Detailed view
+    detailsExpanded = true,       -- Detailed by default; the player can switch to Compact
     detailsTab      = "ABILITIES", -- TLDR / ABILITIES / TIPS
     showQuickTips   = true,       -- show up to 3 practical tips below Compact tactics
     showTrashPanel  = true,       -- show dungeon trash priorities outside boss encounters

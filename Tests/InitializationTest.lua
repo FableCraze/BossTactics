@@ -71,5 +71,7 @@ BossTactics:Init()
 assert(BossTacticsDB.locale == "ptBR", "instalação limpa sem ptBR")
 assert(BossTacticsDB.roleFilter == "ALL", "filtro padrão incorreto")
 assert(BossTacticsDB.schemaVersion == 4, "esquema padrão incorreto")
+assert(BossTacticsDB.detailsExpanded == true,
+    "visualização detalhada deveria ser o padrão")
 
 print("OK: instalação limpa e preservação do banco migrado")
