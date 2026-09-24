@@ -1,0 +1,28 @@
+## Interface: 16001
+## Title: Boss Tactics
+## Title-ptBR: Boss Tactics
+## IconTexture: Interface\AddOns\BossTactics\BossTacticsIcon.jpg
+## Notes: Detecção de chefes e painel de táticas com filtro por função
+## Notes-ptBR: Detecção de chefes e painel de táticas com filtro por função
+## Author: cyberhrc
+## Version: 4.3.0
+## SavedVariables: BossTacticsDB
+## DefaultState: enabled
+
+Locales\Core.lua
+Locales\ptBR.lua
+Theme.lua
+Core.lua
+Detection.lua
+Data\Forever\Init.lua
+Data\Forever\Dungeons\CavernasIgneas.lua
+Components.lua
+MinimapButton.lua
+MiniPanel.lua
+TrashPanel.lua
+Settings.lua
+Editor.lua
+Journal.lua
+ImportExport.lua
+RaidStudio.lua
+RaidBrief.lua
