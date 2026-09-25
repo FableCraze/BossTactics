@@ -16,6 +16,15 @@ Core.lua
 Detection.lua
 Data\Forever\Init.lua
 Data\Forever\Dungeons\CavernasIgneas.lua
+Data\Forever\Dungeons\CavernaUlulante.lua
+Data\Forever\Dungeons\MinasMortas.lua
+Data\Forever\Dungeons\BastilhaPresaNegra.lua
+Data\Forever\Dungeons\OCarcere.lua
+Data\Forever\Dungeons\ProfundezasNegras.lua
+Data\Forever\Dungeons\MonasterioEscarlateCemiterio.lua
+Data\Forever\Dungeons\MonasterioEscarlateBiblioteca.lua
+Data\Forever\Dungeons\Gnomeregan.lua
+Data\Forever\Dungeons\UrzalDosTuscos.lua
 Components.lua
 MinimapButton.lua
 MiniPanel.lua
